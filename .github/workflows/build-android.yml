@@ -13,126 +13,65 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
         cache: 'npm'
-        
+
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-        
+
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+      with:
+        api-level: 33
+        build-tools: 33.0.2
+
     - name: Install Cordova
       run: |
         npm install -g cordova@12.0.0
         cordova --version
-        
-    - name: Clean previous builds
+
+    - name: Clean platforms and plugins
       run: |
         rm -rf platforms/
         rm -rf plugins/
-        
-    - name: Add Android platform
-      run: |
-        cordova platform add android@12.0.0
-        
-    - name: Downgrade Gradle to 7.6.3
-      run: |
-        # Update gradle-wrapper.properties
-        cat > platforms/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
-        distributionBase=GRADLE_USER_HOME
-        distributionPath=wrapper/dists
-        distributionUrl=https\://services.gradle.org/distributions/gradle-7.6.3-all.zip
-        zipStoreBase=GRADLE_USER_HOME
-        zipStorePath=wrapper/dists
-        EOF
-        echo "✅ Downgraded Gradle to 7.6.3"
+        rm -rf node_modules/
+        npm ci
 
-    - name: Fix XmlParser compatibility issue
+    - name: Add Android platform
+      run: cordova platform add android@11.1.0
+
+    - name: Validate config.xml
       run: |
-        # Fix untuk XmlParser yang deprecated
-        cat > fix_xmlparser.js << 'EOF'
-        const fs = require('fs');
-        const path = require('path');
+        sudo apt-get update && sudo apt-get install -y libxml2-utils
+        xmllint --noout config.xml
         
-        const cordovaGradlePath = path.join('platforms', 'android', 'CordovaLib', 'cordova.gradle');
-        
-        if (fs.existsSync(cordovaGradlePath)) {
-            console.log('🔧 Fixing XmlParser in cordova.gradle...');
-            let content = fs.readFileSync(cordovaGradlePath, 'utf8');
-            
-            // Replace XmlParser dengan XmlSlurper
-            content = content.replace(/new XmlParser\(false, false\)/g, 'new XmlSlurper()');
-            content = content.replace(/XmlParser\(\)/g, 'XmlSlurper()');
-            
-            fs.writeFileSync(cordovaGradlePath, content, 'utf8');
-            console.log('✅ Fixed XmlParser to XmlSlurper');
-        }
-        EOF
-        node fix_xmlparser.js
-        
-    - name: Update Android build configuration
+    - name: Add build-extras.gradle
       run: |
-        # Update build.gradle dengan Gradle plugin yang kompatibel
-        cat > update_build.gradle << 'EOF'
-        buildscript {
-            dependencies {
-                classpath 'com.android.tools.build:gradle:7.4.2'
-            }
+        mkdir -p platforms/android/app
+        echo "android {
+        compileSdkVersion 33
+        buildToolsVersion '33.0.2'
+        defaultConfig {
+        minSdkVersion 26
+        targetSdkVersion 33
         }
-        
-        android {
-            compileSdkVersion 34
-            buildToolsVersion "34.0.0"
-            namespace 'com.n90.myinput.app'
-            
-            compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
-            
-            defaultConfig {
-                minSdkVersion 26
-                targetSdkVersion 34
-            }
+        compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
         }
-        EOF
-        
-        # Apply update ke platform build.gradle
-        if [ -f "platforms/android/build.gradle" ]; then
-            # Update Gradle plugin version
-            sed -i 's/com.android.tools.build:gradle:[^"]*/com.android.tools.build:gradle:7.4.2/g' platforms/android/build.gradle
-            echo "✅ Updated Gradle plugin to 7.4.2"
-        fi
-        
-        # Apply update ke app build.gradle
-        if [ -f "platforms/android/app/build.gradle" ]; then
-            # Hapus section android existing dan tambahkan yang baru
-            sed -i '/android {/,/}/d' platforms/android/app/build.gradle
-            cat update_build.gradle | tail -n +4 >> platforms/android/app/build.gradle
-            echo "✅ Updated Android build configuration"
-        fi
-        
-    - name: Set environment variables
-      run: |
-        echo "ORG_GRADLE_PROJECT_cdvCompileSdkVersion=34" >> $GITHUB_ENV
-        echo "ORG_GRADLE_PROJECT_cdvTargetSdkVersion=34" >> $GITHUB_ENV
-        echo "ORG_GRADLE_PROJECT_cdvMinSdkVersion=26" >> $GITHUB_ENV
-        echo "CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL=https\\://services.gradle.org/distributions/gradle-7.6.3-all.zip" >> $GITHUB_ENV
-        
+        }" > platforms/android/app/build-extras.gradle
+
     - name: Build Android Release
-      run: |
-        cordova build android --release -- --packageType=apk
-        
-    - name: Check if APK exists
-      run: |
-        ls -la platforms/android/app/build/outputs/apk/release/
-        
-    - name: Upload APK artifact
+      run: cordova build android --release -- --packageType=apk
+      
+    - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: android-apk
