@@ -56,18 +56,28 @@ jobs:
       run: |
         mkdir -p platforms/android/app
         echo "android {
-        compileSdkVersion 33
-        buildToolsVersion '33.0.2'
-        defaultConfig {
-        minSdkVersion 26
-        targetSdkVersion 33
-        }
-        compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-        }
-        }" > platforms/android/app/build-extras.gradle
+          compileSdkVersion 33
+          buildToolsVersion '33.0.2'
+          defaultConfig {
+            minSdkVersion 26
+            targetSdkVersion 33
+          }
+          compileOptions {
+             sourceCompatibility JavaVersion.VERSION_17
+             targetCompatibility JavaVersion.VERSION_17
+            }
+          }" > platforms/android/app/build-extras.gradle
 
+    - name: Add groovy-xml dependency fix
+      run: |
+       mkdir -p platforms/android
+       echo "buildscript {
+         repositories { google(); mavenCentral() }
+         dependencies {
+           classpath 'org.codehaus.groovy:groovy-xml:3.0.16'
+        }
+       }" > platforms/android/cordova-build-override.gradle
+      
     - name: Build Android Release
       run: cordova build android --release -- --packageType=apk
       
