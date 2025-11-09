@@ -23,10 +23,10 @@ jobs:
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '17'  # Kembali ke Java 11 untuk kompatibilitas
         distribution: 'temurin'
         
-    - name: Install Cordova with specific version
+    - name: Install Cordova with compatible version
       run: |
         npm install -g cordova@12.0.0
         cordova --version
@@ -36,17 +36,40 @@ jobs:
         rm -rf platforms/
         rm -rf plugins/
         
-    - name: Add Android platform with specific version
+    - name: Add Android platform with compatible version
       run: |
-        cordova platform add android@11.0.0
+        cordova platform add android@12.0.0  # Update ke versi yang match dengan Cordova 12
         
-    - name: Fix Android compatibility
+    - name: Fix XmlParser compatibility issue
       run: |
-        # Update build.gradle for compatibility
-        cd platforms/android
-        echo "android {
-            compileSdkVersion 33
-            buildToolsVersion '33.0.2'
+        # Fix untuk XmlParser yang deprecated
+        cat > fix_xmlparser.js << 'EOF'
+        const fs = require('fs');
+        const path = require('path');
+        
+        const cordovaGradlePath = path.join('platforms', 'android', 'CordovaLib', 'cordova.gradle');
+        
+        if (fs.existsSync(cordovaGradlePath)) {
+            console.log('🔧 Fixing XmlParser in cordova.gradle...');
+            let content = fs.readFileSync(cordovaGradlePath, 'utf8');
+            
+            // Replace XmlParser dengan XmlSlurper
+            content = content.replace(/new XmlParser\(false, false\)/g, 'new XmlSlurper()');
+            content = content.replace(/XmlParser\(\)/g, 'XmlSlurper()');
+            
+            fs.writeFileSync(cordovaGradlePath, content, 'utf8');
+            console.log('✅ Fixed XmlParser to XmlSlurper');
+        }
+        EOF
+        node fix_xmlparser.js
+        
+    - name: Fix Android build compatibility
+      run: |
+        # Update app build.gradle untuk kompatibilitas
+        cat > fix_build.gradle << 'EOF'
+        android {
+            compileSdkVersion 34
+            buildToolsVersion "33.0.2"
             namespace 'com.n90.myinput.app'
             
             compileOptions {
@@ -56,13 +79,31 @@ jobs:
             
             defaultConfig {
                 minSdkVersion 26
-                targetSdkVersion 33
+                targetSdkVersion 34
             }
-        }" > cordova-build-override.gradle
+        }
+        EOF
+        
+        # Apply the fix to app build.gradle
+        if [ -f "platforms/android/app/build.gradle" ]; then
+            cat fix_build.gradle >> platforms/android/app/build.gradle
+            echo "✅ Applied Android build compatibility fix"
+        fi
+        
+    - name: Set environment variables for compatibility
+      run: |
+        echo "ORG_GRADLE_PROJECT_cdvCompileSdkVersion=34" >> $GITHUB_ENV
+        echo "ORG_GRADLE_PROJECT_cdvTargetSdkVersion=34" >> $GITHUB_ENV
+        echo "ORG_GRADLE_PROJECT_cdvMinSdkVersion=26" >> $GITHUB_ENV
+        echo "CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL=https\\://services.gradle.org/distributions/gradle-7.5.1-all.zip" >> $GITHUB_ENV
         
     - name: Build Android Release
       run: |
-        cordova build android --release -- --packageType=apk
+        cordova build android --release -- --packageType=apk --warning-mode=none
+        
+    - name: Check if APK exists
+      run: |
+        find platforms/android/app/build/outputs/ -name "*.apk" -type f | head -5
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
