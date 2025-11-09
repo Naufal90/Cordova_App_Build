@@ -20,30 +20,50 @@ jobs:
         node-version: '18'
         cache: 'npm'
         
-    - name: Install Cordova
-      run: |
-        npm install -g cordova@latest
-        cordova --version
-        
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
+        java-version: '11'
         distribution: 'temurin'
         
-    - name: Clean and update platforms
+    - name: Install Cordova with specific version
       run: |
-        # Hapus platform lama jika ada
+        npm install -g cordova@12.0.0
+        cordova --version
+        
+    - name: Clean previous builds
+      run: |
         rm -rf platforms/
         rm -rf plugins/
         
-        # Install platform android versi terbaru
-        cordova platform add android@latest
-        
-    - name: Build Android APK
+    - name: Add Android platform with specific version
       run: |
-        cordova build android --release
-      
+        cordova platform add android@11.0.0
+        
+    - name: Fix Android compatibility
+      run: |
+        # Update build.gradle for compatibility
+        cd platforms/android
+        echo "android {
+            compileSdkVersion 33
+            buildToolsVersion '33.0.2'
+            namespace 'com.n90.myinput.app'
+            
+            compileOptions {
+                sourceCompatibility JavaVersion.VERSION_11
+                targetCompatibility JavaVersion.VERSION_11
+            }
+            
+            defaultConfig {
+                minSdkVersion 26
+                targetSdkVersion 33
+            }
+        }" > cordova-build-override.gradle
+        
+    - name: Build Android Release
+      run: |
+        cordova build android --release -- --packageType=apk
+        
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
       with:
