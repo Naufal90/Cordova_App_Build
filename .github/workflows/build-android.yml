@@ -23,10 +23,10 @@ jobs:
     - name: Setup Java
       uses: actions/setup-java@v4
       with:
-        java-version: '17'  # Kembali ke Java 11 untuk kompatibilitas
+        java-version: '17'
         distribution: 'temurin'
         
-    - name: Install Cordova with compatible version
+    - name: Install Cordova
       run: |
         npm install -g cordova@12.0.0
         cordova --version
@@ -36,10 +36,22 @@ jobs:
         rm -rf platforms/
         rm -rf plugins/
         
-    - name: Add Android platform with compatible version
+    - name: Add Android platform
       run: |
-        cordova platform add android@12.0.0  # Update ke versi yang match dengan Cordova 12
+        cordova platform add android@12.0.0
         
+    - name: Downgrade Gradle to 7.6.3
+      run: |
+        # Update gradle-wrapper.properties
+        cat > platforms/android/gradle/wrapper/gradle-wrapper.properties << 'EOF'
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-7.6.3-all.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+EOF
+        echo "✅ Downgraded Gradle to 7.6.3"
+
     - name: Fix XmlParser compatibility issue
       run: |
         # Fix untuk XmlParser yang deprecated
@@ -63,13 +75,19 @@ jobs:
         EOF
         node fix_xmlparser.js
         
-    - name: Fix Android build compatibility
+    - name: Update Android build configuration
       run: |
-        # Update app build.gradle untuk kompatibilitas
-        cat > fix_build.gradle << 'EOF'
+        # Update build.gradle dengan Gradle plugin yang kompatibel
+        cat > update_build.gradle << 'EOF'
+        buildscript {
+            dependencies {
+                classpath 'com.android.tools.build:gradle:7.4.2'
+            }
+        }
+        
         android {
             compileSdkVersion 34
-            buildToolsVersion "33.0.2"
+            buildToolsVersion "34.0.0"
             namespace 'com.n90.myinput.app'
             
             compileOptions {
@@ -82,28 +100,37 @@ jobs:
                 targetSdkVersion 34
             }
         }
-        EOF
+EOF
         
-        # Apply the fix to app build.gradle
-        if [ -f "platforms/android/app/build.gradle" ]; then
-            cat fix_build.gradle >> platforms/android/app/build.gradle
-            echo "✅ Applied Android build compatibility fix"
+        # Apply update ke platform build.gradle
+        if [ -f "platforms/android/build.gradle" ]; then
+            # Update Gradle plugin version
+            sed -i 's/com.android.tools.build:gradle:[^"]*/com.android.tools.build:gradle:7.4.2/g' platforms/android/build.gradle
+            echo "✅ Updated Gradle plugin to 7.4.2"
         fi
         
-    - name: Set environment variables for compatibility
+        # Apply update ke app build.gradle
+        if [ -f "platforms/android/app/build.gradle" ]; then
+            # Hapus section android existing dan tambahkan yang baru
+            sed -i '/android {/,/}/d' platforms/android/app/build.gradle
+            cat update_build.gradle | tail -n +4 >> platforms/android/app/build.gradle
+            echo "✅ Updated Android build configuration"
+        fi
+        
+    - name: Set environment variables
       run: |
         echo "ORG_GRADLE_PROJECT_cdvCompileSdkVersion=34" >> $GITHUB_ENV
         echo "ORG_GRADLE_PROJECT_cdvTargetSdkVersion=34" >> $GITHUB_ENV
         echo "ORG_GRADLE_PROJECT_cdvMinSdkVersion=26" >> $GITHUB_ENV
-        echo "CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL=https\\://services.gradle.org/distributions/gradle-7.5.1-all.zip" >> $GITHUB_ENV
+        echo "CORDOVA_ANDROID_GRADLE_DISTRIBUTION_URL=https\\://services.gradle.org/distributions/gradle-7.6.3-all.zip" >> $GITHUB_ENV
         
     - name: Build Android Release
       run: |
-        cordova build android --release -- --packageType=apk --warning-mode=none
+        cordova build android --release -- --packageType=apk
         
     - name: Check if APK exists
       run: |
-        find platforms/android/app/build/outputs/ -name "*.apk" -type f | head -5
+        ls -la platforms/android/app/build/outputs/apk/release/
         
     - name: Upload APK artifact
       uses: actions/upload-artifact@v4
