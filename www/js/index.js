@@ -1,17 +1,16 @@
 document.addEventListener('deviceready', onDeviceReady, false);
 
 let currentData = { masuk: [], keluar: [] };
-let darkMode = 'system'; // options: 'system', 'light', 'dark'
+let darkMode = localStorage.getItem('darkMode') || 'system';
+let saveFolder = localStorage.getItem('saveFolder') || '';
 
 function onDeviceReady() {
-    console.log('Device ready!');
     loadSavedData();
     setupEventListeners();
-    applyDarkMode();
+    setDarkMode(darkMode);
     document.getElementById('tanggal').value = getCurrentDateTime();
 }
 
-// ====================== Event Listeners ======================
 function setupEventListeners() {
     document.getElementById('dataForm').addEventListener('submit', function(e) {
         e.preventDefault();
@@ -19,219 +18,129 @@ function setupEventListeners() {
     });
 }
 
-// ====================== Tabs ======================
+// === TAB SWITCH ===
 function switchTab(tabName) {
-    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-    
-    document.querySelector(`.tab:nth-child(${tabName === 'masuk' ? 1 : 2})`).classList.add('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector(`.tab:nth-child(${tabName==='masuk'?1:2})`).classList.add('active');
     document.getElementById(`${tabName}-tab`).classList.add('active');
-    
-    renderData(tabName);
+    loadSavedData();
 }
 
-// ====================== Modal ======================
-function showForm() {
-    document.getElementById('formModal').style.display = 'flex';
-    document.getElementById('tanggal').value = getCurrentDateTime();
-}
-function hideForm() {
-    document.getElementById('formModal').style.display = 'none';
-    document.getElementById('dataForm').reset();
-}
+// === FORM ===
+function showForm() {document.getElementById('formModal').style.display='flex'; document.getElementById('tanggal').value=getCurrentDateTime();}
+function hideForm() {document.getElementById('formModal').style.display='none'; document.getElementById('dataForm').reset();}
 
-function showExportModal() {
-    document.getElementById('exportModal').style.display = 'flex';
-}
-function hideExportModal() {
-    document.getElementById('exportModal').style.display = 'none';
-}
-
-// ====================== Dark Mode ======================
-function toggleDarkMode(mode) {
-    darkMode = mode;
-    applyDarkMode();
-    localStorage.setItem('darkMode', darkMode);
-}
-
-function applyDarkMode() {
-    if (darkMode === 'system') {
-        darkMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    }
-    document.body.classList.toggle('dark', darkMode === 'dark');
-}
-
-// ====================== Date ======================
 function getCurrentDateTime() {
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth()+1).padStart(2,'0');
-    const dd = String(now.getDate()).padStart(2,'0');
-    const hh = String(now.getHours()).padStart(2,'0');
-    const min = String(now.getMinutes()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
-}
-function getCurrentDateString() {
-    return new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const now=new Date();
+    return `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}T${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 }
 
-// ====================== Storage ======================
 function saveData() {
-    const jenis = document.getElementById('jenisData').value;
-    const data = {
+    const formData={
         id: Date.now(),
-        jenis,
+        jenis: document.getElementById('jenisData').value,
         nama: document.getElementById('nama').value,
         tanggal: document.getElementById('tanggal').value,
         keterangan: document.getElementById('keterangan').value,
-        nomor: generateNomor(jenis)
+        nomor: generateNomor(document.getElementById('jenisData').value)
     };
-    currentData[jenis].push(data);
-    saveToFile();
+    currentData[formData.jenis].push(formData);
+    localStorage.setItem('appData', JSON.stringify(currentData));
     alert('✅ Data berhasil disimpan!');
-    hideForm();
-    renderData(jenis);
+    hideForm(); loadSavedData();
 }
 
-function generateNomor(jenis) {
-    const prefix = jenis==='masuk'?'M':'K';
-    const maxId = currentData[jenis].reduce((max, d)=>d.id>max?d.id:max,0);
-    const count = currentData[jenis].length+1;
-    return `${prefix}${String(count).padStart(4,'0')}`;
-}
+function generateNomor(jenis) {return (jenis==='masuk'?'M':'K')+String(currentData[jenis].length).padStart(4,'0');}
 
-function saveToFile() {
-    if (!cordova.plugins || !cordova.plugins.file) {
-        localStorage.setItem('appData', JSON.stringify(currentData));
-        return;
-    }
-    const content = JSON.stringify(currentData, null, 2);
-    window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, dir=>{
-        dir.getFile('data.json',{create:true}, file=>{
-            file.createWriter(writer=>{
-                writer.write(content);
-            });
-        });
-    });
-}
-
+// === LOAD & RENDER ===
 function loadSavedData() {
-    if (cordova && cordova.plugins && cordova.plugins.file) {
-        window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory + 'data.json', fileEntry=>{
-            fileEntry.file(file=>{
-                const reader = new FileReader();
-                reader.onloadend = function() {
-                    currentData = JSON.parse(this.result || '{"masuk":[],"keluar":[]}');
-                    renderData('masuk');
-                    renderData('keluar');
-                };
-                reader.readAsText(file);
-            });
-        }, ()=>{
-            // fallback: tidak ada file
-            currentData = {masuk:[], keluar:[]};
-        });
-    } else {
-        const saved = localStorage.getItem('appData');
-        if(saved) currentData = JSON.parse(saved);
-        renderData('masuk');
-        renderData('keluar');
-    }
+    const saved=localStorage.getItem('appData');
+    if(saved) currentData=JSON.parse(saved);
+    renderData('masuk'); renderData('keluar');
 }
 
-// ====================== Render Table ======================
 function renderData(jenis) {
-    const container = document.getElementById(`${jenis}-data`);
-    const data = currentData[jenis];
-    
-    if (!data.length) {
-        container.innerHTML = `<div class="empty-state">📭 Tidak ada data ${jenis}<br>Tambah data menggunakan tombol +</div>`;
+    const container=document.getElementById(`${jenis}-data`);
+    const data=currentData[jenis];
+    if(data.length===0){
+        container.innerHTML=`<div class="empty-state">📭 Tidak ada data ${jenis==='masuk'?'masuk':'keluar'}<br>Klik tombol + untuk menambah data</div>`;
         return;
     }
-    
-    const rows = data.map((d,i)=>`
-        <div class="table-row">
-            <div class="col-no">${i+1}</div>
-            <div class="col-nama">${d.nama}</div>
-            <div class="col-tanggal">${formatTanggal(d.tanggal)}</div>
-            <div class="col-keterangan">${d.keterangan||'-'}</div>
-        </div>
-    `).join('');
-    
-    container.innerHTML = rows;
+    container.innerHTML=`<div class="table-header ${darkMode==='dark'?'dark':''}"><div class="col-no">No</div><div class="col-nama">Nama</div><div class="col-tanggal">Tanggal/Waktu</div><div class="col-keterangan">Keterangan</div></div>`+
+        data.map((item,i)=>`<div class="table-row ${darkMode==='dark'?'dark':''}"><div class="col-no">${i+1}</div><div class="col-nama">${item.nama}</div><div class="col-tanggal">${formatTanggal(item.tanggal)}</div><div class="col-keterangan">${item.keterangan||'-'}</div></div>`).join('');
 }
 
-function formatTanggal(t) {
-    const date = new Date(t);
-    return date.toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric', hour:'2-digit', minute:'2-digit'});
+function formatTanggal(t) {const d=new Date(t);return d.toLocaleString('id-ID',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+
+// === DARK MODE ===
+function toggleDarkMode() {
+    darkMode=(darkMode==='dark')?'light':'dark';
+    localStorage.setItem('darkMode', darkMode);
+    setDarkMode(darkMode);
 }
 
-// ====================== Export ======================
-function exportToCSV() {
-    const allData = [...currentData.masuk,...currentData.keluar];
-    if(!allData.length){alert('❌ Tidak ada data'); return;}
-    const headers = ['No','Jenis','Nama','Tanggal','Keterangan'];
-    const csv = [
-        headers.join(','),
-        ...allData.map((d,i)=>[
-            `"${i+1}"`,
-            `"${d.jenis}"`,
-            `"${d.nama}"`,
-            `"${formatTanggal(d.tanggal)}"`,
-            `"${d.keterangan||''}"`
-        ].join(','))
-    ].join('\n');
-    saveFile(csv, `data_export_${getCurrentDateString()}.csv`, 'text/csv');
+function setDarkMode(mode){
+    if(mode==='system'){document.body.classList.remove('dark');}
+    else if(mode==='dark'){document.body.classList.add('dark');}
+    else{document.body.classList.remove('dark');}
 }
 
-function exportToXLSX() {
-    alert('📊 XLSX memerlukan library tambahan (SheetJS). Saat ini disimpan sebagai CSV.');
-    exportToCSV();
+// === EXPORT MODAL ===
+function toggleExportModal(){document.getElementById('exportModal').style.display='flex'; document.getElementById('saveFolder').value=saveFolder;}
+function hideExportModal(){document.getElementById('exportModal').style.display='none'; saveFolder=document.getElementById('saveFolder').value; localStorage.setItem('saveFolder',saveFolder);}
+
+// === EXPORT FUNCTIONS ===
+function exportToCSV(){
+    const allData=[...currentData.masuk,...currentData.keluar];
+    if(allData.length===0){alert('❌ Tidak ada data untuk diexport!'); return;}
+    const headers=['No','Jenis','Nama','Tanggal','Keterangan'];
+    const csvContent=[headers.join(','), ...allData.map((item,i)=>[i+1,item.jenis,item.nama,formatTanggal(item.tanggal),item.keterangan||''].join(','))].join('\n');
+    saveFile(csvContent, `data_export_${getCurrentDateString()}.csv`, 'text/csv');
+    hideExportModal();
 }
 
-function saveFile(content, filename, mimeType) {
-    if(cordova && cordova.plugins && cordova.plugins.file){
-        window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory, dir=>{
-            dir.getFile(filename,{create:true}, file=>{
-                file.createWriter(writer=>{
-                    writer.write(content);
-                    alert(`✅ File tersimpan: ${file.nativeURL}`);
-                });
+function exportToXLSX(){
+    alert('📊 XLSX fallback: file tetap CSV tapi berekstensi .xlsx');
+    const allData=[...currentData.masuk,...currentData.keluar];
+    if(allData.length===0){alert('❌ Tidak ada data untuk diexport!'); return;}
+    const headers=['No','Jenis','Nama','Tanggal','Keterangan'];
+    const csvContent=[headers.join(','), ...allData.map((item,i)=>[i+1,item.jenis,item.nama,formatTanggal(item.tanggal),item.keterangan||''].join(','))].join('\n');
+    saveFile(csvContent, `data_export_${getCurrentDateString()}.xlsx`, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    hideExportModal();
+}
+
+function getCurrentDateString(){return new Date().toISOString().slice(0,10).replace(/-/g,'');}
+
+// === SAVE FILE ===
+function saveFile(content, filename, mimeType){
+    if(typeof cordova!=='undefined' && cordova.plugins && cordova.plugins.file){
+        // Permission Android
+        if(cordova.plugins.permissions){
+            cordova.plugins.permissions.requestPermission(cordova.plugins.permissions.WRITE_EXTERNAL_STORAGE, function(status){
+                if(!status.hasPermission){alert('❌ Izin storage ditolak'); return;}
+                saveWithCordova(content, filename, mimeType);
             });
-        });
+        } else saveWithCordova(content, filename, mimeType);
     } else {
-        const blob = new Blob([content],{type:mimeType});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        a.click();
-        URL.revokeObjectURL(url);
+        const blob=new Blob([content], {type:mimeType});
+        const url=window.URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url; a.download=filename; a.click(); window.URL.revokeObjectURL(url);
         alert(`✅ File ${filename} berhasil diunduh!`);
     }
 }
 
-// ====================== DOMContentLoaded ======================
-document.addEventListener('DOMContentLoaded',()=>{
-    // export button
-    const header = document.querySelector('.header');
-    const exportBtn = document.createElement('button');
-    exportBtn.innerHTML = '💾 Export';
-    exportBtn.style.cssText = `
-        background: rgba(255,255,255,0.2);
-        border:1px solid rgba(255,255,255,0.3);
-        color:white; padding:8px 15px; border-radius:20px; margin-top:10px; cursor:pointer;
-    `;
-    exportBtn.onclick = showExportModal;
-    header.appendChild(exportBtn);
-    
-    // dark mode toggle
-    const darkBtn = document.createElement('button');
-    darkBtn.innerHTML = '🌓 Mode';
-    darkBtn.style.cssText = exportBtn.style.cssText;
-    darkBtn.onclick = ()=>{
-        darkMode = (darkMode==='light')?'dark':'light';
-        toggleDarkMode(darkMode);
-    };
-    header.appendChild(darkBtn);
-});
+function saveWithCordova(content, filename, mimeType){
+    window.resolveLocalFileSystemURL(cordova.file.externalDataDirectory,function(dir){
+        const folderPath = document.getElementById('saveFolder').value || '';
+        dir.getDirectory(folderPath,{create:true}, function(subDir){
+            subDir.getFile(filename,{create:true}, function(fileEntry){
+                fileEntry.createWriter(function(writer){
+                    writer.write(content);
+                    alert(`✅ File berhasil disimpan: ${fileEntry.nativeURL}`);
+                });
+            });
+        });
+    });
+        }
