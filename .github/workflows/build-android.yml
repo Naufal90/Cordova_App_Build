@@ -45,7 +45,7 @@ jobs:
         npm ci
 
     - name: Add Android platform
-      run: cordova platform add android@11.1.0
+      run: cordova platform add android@11.0.0
 
     - name: Validate config.xml
       run: |
