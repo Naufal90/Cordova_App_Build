@@ -100,7 +100,7 @@ jobs:
                 targetSdkVersion 34
             }
         }
-EOF
+        EOF
         
         # Apply update ke platform build.gradle
         if [ -f "platforms/android/build.gradle" ]; then
