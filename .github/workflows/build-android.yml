@@ -22,7 +22,7 @@ jobs:
         
     - name: Install Cordova
       run: |
-        npm install -g cordova
+        npm install -g cordova@latest
         cordova --version
         
     - name: Setup Java
@@ -31,14 +31,15 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
         
-    - name: Install dependencies
+    - name: Clean and update platforms
       run: |
-        npm install
+        # Hapus platform lama jika ada
+        rm -rf platforms/
+        rm -rf plugins/
         
-    - name: Add Android platform
-      run: |
-        cordova platform add android
-      
+        # Install platform android versi terbaru
+        cordova platform add android@latest
+        
     - name: Build Android APK
       run: |
         cordova build android --release
@@ -48,3 +49,4 @@ jobs:
       with:
         name: android-apk
         path: platforms/android/app/build/outputs/apk/release/
+        retention-days: 30
