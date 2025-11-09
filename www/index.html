@@ -1,319 +1,152 @@
 <!DOCTYPE html>
-<html>
+<html lang="id">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Management App</title>
-    <script src="cordova.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-        }
-        
-        .container {
-            padding: 20px;
-            max-width: 100%;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 20px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-        
-        .header h1 {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-        
-        .tabs {
-            display: flex;
-            background: white;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        
-        .tab {
-            flex: 1;
-            padding: 15px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border-radius: 10px;
-        }
-        
-        .tab.active {
-            background: #667eea;
-            color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-        
-        .data-table {
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 80px;
-        }
-        
-        .table-header {
-            background: #f8f9fa;
-            padding: 15px;
-            font-weight: bold;
-            border-bottom: 1px solid #eee;
-        }
-        
-        .table-row {
-            display: flex;
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-            align-items: center;
-        }
-        
-        .table-row:nth-child(even) {
-            background: #f8f9fa;
-        }
-        
-        .col-no { width: 15%; }
-        .col-nama { width: 25%; }
-        .col-tanggal { width: 25%; }
-        .col-keterangan { width: 35%; }
-        
-        .fab-button {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 24px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
-            cursor: pointer;
-            z-index: 1000;
-            transition: transform 0.3s ease;
-        }
-        
-        .fab-button:hover {
-            transform: scale(1.1);
-        }
-        
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.5);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .modal-content {
-            background: white;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .modal-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 15px 15px 0 0;
-        }
-        
-        .modal-body {
-            padding: 20px;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-        }
-        
-        .form-control {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            font-size: 14px;
-        }
-        
-        .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .btn {
-            flex: 1;
-            padding: 12px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: #6c757d;
-            color: white;
-        }
-        
-        .btn-success {
-            background: #28a745;
-            color: white;
-        }
-        
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: #6c757d;
-        }
-        
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Data Management App</title>
+<script src="cordova.js"></script>
+<style>
+:root {
+    --bg-color: #f5f5f5;
+    --text-color: #333;
+    --header-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --tab-active-bg: #667eea;
+    --tab-active-color: #fff;
+    --table-bg: #fff;
+    --table-row-even: #f8f9fa;
+}
+body.dark {
+    --bg-color: #1e1e2f;
+    --text-color: #ddd;
+    --header-bg: linear-gradient(135deg, #333399 0%, #551a8b 100%);
+    --tab-active-bg: #4444aa;
+    --tab-active-color: #fff;
+    --table-bg: #2c2c3c;
+    --table-row-even: #3a3a4c;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--bg-color);
+    color: var(--text-color);
+}
+.container { padding:20px; max-width:100%; }
+.header {
+    text-align:center; margin-bottom:30px; padding:20px;
+    background: var(--header-bg);
+    color:white; border-radius:15px; box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
+.header h1 { font-size:1.5em; margin-bottom:10px; }
+.tabs { display:flex; background:white; border-radius:10px; margin-bottom:20px; box-shadow:0 2px 10px rgba(0,0,0,0.1);}
+.tab {
+    flex:1; padding:15px; text-align:center; cursor:pointer; transition:all 0.3s ease; border-radius:10px;
+}
+.tab.active { background: var(--tab-active-bg); color: var(--tab-active-color);}
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+.data-table { background: var(--table-bg); border-radius:10px; overflow:hidden; box-shadow:0 2px 10px rgba(0,0,0,0.1); margin-bottom:80px; }
+.table-header { padding:15px; font-weight:bold; border-bottom:1px solid #eee; }
+.table-row { display:flex; padding:12px 15px; border-bottom:1px solid #eee; align-items:center; }
+.table-row:nth-child(even){ background: var(--table-row-even);}
+.col-no { width:10%; }
+.col-nama { width:30%; }
+.col-tanggal { width:30%; }
+.col-keterangan { width:30%; }
+.fab-button {
+    position:fixed; bottom:30px; right:30px; width:60px; height:60px;
+    background: var(--tab-active-bg); border-radius:50%; display:flex; align-items:center; justify-content:center;
+    color:white; font-size:24px; box-shadow:0 4px 20px rgba(0,0,0,0.2); cursor:pointer; z-index:1000; transition:transform 0.3s ease;
+}
+.fab-button:hover { transform:scale(1.1);}
+.modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:2000; align-items:center; justify-content:center;}
+.modal-content { background: var(--table-bg); border-radius:15px; width:90%; max-width:500px; max-height:80vh; overflow-y:auto; }
+.modal-header { padding:20px; border-bottom:1px solid #eee; background: var(--header-bg); color:white; border-radius:15px 15px 0 0;}
+.modal-body { padding:20px; }
+.form-group { margin-bottom:20px; }
+.form-group label { display:block; margin-bottom:5px; font-weight:500; }
+.form-control { width:100%; padding:12px; border:1px solid #ddd; border-radius:8px; font-size:14px; }
+.btn-group { display:flex; gap:10px; margin-top:20px; }
+.btn { flex:1; padding:12px; border:none; border-radius:8px; cursor:pointer; font-weight:500;}
+.btn-primary { background:#667eea; color:white;}
+.btn-secondary { background:#6c757d; color:white;}
+.btn-success { background:#28a745; color:white;}
+.empty-state { text-align:center; padding:40px 20px; color:#6c757d;}
+.action-buttons { display:flex; gap:10px; margin-top:20px;}
+</style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📊 Data Management</h1>
-            <p>Kelola Data Masuk & Keluar</p>
-        </div>
-        
-        <div class="tabs">
-            <div class="tab active" onclick="switchTab('masuk')">📥 Data Masuk</div>
-            <div class="tab" onclick="switchTab('keluar')">📤 Data Keluar</div>
-        </div>
-        
-        <!-- Data Masuk Tab -->
-        <div id="masuk-tab" class="tab-content active">
-            <div class="data-table">
-                <div class="table-header">
-                    Data Masuk
-                </div>
-                <div id="masuk-data">
-                    <!-- Data akan diisi oleh JavaScript -->
-                </div>
-            </div>
-        </div>
-        
-        <!-- Data Keluar Tab -->
-        <div id="keluar-tab" class="tab-content">
-            <div class="data-table">
-                <div class="table-header">
-                    Data Keluar
-                </div>
-                <div id="keluar-data">
-                    <!-- Data akan diisi oleh JavaScript -->
-                </div>
-            </div>
+<div class="container">
+    <div class="header">
+        <h1>📊 Data Management</h1>
+        <p>Kelola Data Masuk & Keluar</p>
+    </div>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('masuk')">📥 Data Masuk</div>
+        <div class="tab" onclick="switchTab('keluar')">📤 Data Keluar</div>
+    </div>
+    <div id="masuk-tab" class="tab-content active">
+        <div class="data-table">
+            <div class="table-header">Data Masuk</div>
+            <div id="masuk-data"></div>
         </div>
     </div>
-    
-    <!-- FAB Button -->
-    <div class="fab-button" onclick="showForm()">
-        +
-    </div>
-    
-    <!-- Modal Form -->
-    <div id="formModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>➕ Tambah Data Baru</h2>
-            </div>
-            <div class="modal-body">
-                <form id="dataForm">
-                    <div class="form-group">
-                        <label>Jenis Data</label>
-                        <select id="jenisData" class="form-control" required>
-                            <option value="masuk">📥 Data Masuk</option>
-                            <option value="keluar">📤 Data Keluar</option>
-                        </select>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Nama</label>
-                        <input type="text" id="nama" class="form-control" placeholder="Masukkan nama" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Tanggal</label>
-                        <input type="datetime-local" id="tanggal" class="form-control" required>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Keterangan</label>
-                        <textarea id="keterangan" class="form-control" placeholder="Masukkan keterangan" rows="3"></textarea>
-                    </div>
-                    
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-secondary" onclick="hideForm()">Batal</button>
-                        <button type="submit" class="btn btn-primary">Simpan Data</button>
-                    </div>
-                </form>
-            </div>
+    <div id="keluar-tab" class="tab-content">
+        <div class="data-table">
+            <div class="table-header">Data Keluar</div>
+            <div id="keluar-data"></div>
         </div>
     </div>
-    
-    <!-- Export Modal -->
-    <div id="exportModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>💾 Export Data</h2>
-            </div>
-            <div class="modal-body">
-                <div class="action-buttons">
-                    <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
-                    <button class="btn btn-primary" onclick="exportToXLSX()">Export Excel</button>
-                </div>
-            </div>
-        </div>
-    </div>
+</div>
 
-    <script src="js/index.js"></script>
+<div class="fab-button" onclick="showForm()">+</div>
+
+<!-- Modal Form -->
+<div id="formModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>➕ Tambah Data Baru</h2></div>
+        <div class="modal-body">
+            <form id="dataForm">
+                <div class="form-group">
+                    <label>Jenis Data</label>
+                    <select id="jenisData" class="form-control" required>
+                        <option value="masuk">📥 Data Masuk</option>
+                        <option value="keluar">📤 Data Keluar</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nama</label>
+                    <input type="text" id="nama" class="form-control" placeholder="Masukkan nama" required>
+                </div>
+                <div class="form-group">
+                    <label>Tanggal</label>
+                    <input type="datetime-local" id="tanggal" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <textarea id="keterangan" class="form-control" placeholder="Masukkan keterangan" rows="3"></textarea>
+                </div>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-secondary" onclick="hideForm()">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div id="exportModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header"><h2>💾 Export Data</h2></div>
+        <div class="modal-body">
+            <div class="action-buttons">
+                <button class="btn btn-success" onclick="exportToCSV()">Export CSV</button>
+                <button class="btn btn-primary" onclick="exportToXLSX()">Export XLSX</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="js/index.js"></script>
 </body>
-</html>
+        </html>
