@@ -34,8 +34,12 @@ jobs:
     - name: Setup Android SDK
       uses: android-actions/setup-android@v2
       with:
-        api-level: 33
-        build-tools: 33.0.2
+        api-level: 32
+        build-tools: 32.0.0
+
+    - name: Install Android SDK Build Tools
+      run: |
+        yes | sdkmanager "build-tools;32.0.0" "platforms;android-32" "platform-tools"
 
     - name: Install Cordova
       run: |
